@@ -1,3 +1,5 @@
+import net from 'node:net'
+
 type EmulatorConfig = {
     deviceCount: number
     ingestHost: string
@@ -9,10 +11,11 @@ type Device = {
     readonly deviceId: string
     readonly config: EmulatorConfig
     eventTimer?: NodeJS.Timeout
+    socket?: net.Socket
 }
 
 export function startEmulator(config: EmulatorConfig): Device[] {
-    console.log(`Starting ${config.deviceCount} device(s), ingest: ${config.ingestHost}:${config.ingestPort}`)
+    console.log(`Connecting ${config.deviceCount} device(s), ingest: ${config.ingestHost}:${config.ingestPort}`)
 
     const devices: Device[] = Array.from({ length: config.deviceCount }, (_, i) => ({
         deviceId: `device-${i + 1}`,
@@ -21,7 +24,7 @@ export function startEmulator(config: EmulatorConfig): Device[] {
     }))
 
     for (const device of devices) {
-        startDevice(device)
+        connectDevice(device)
     }
 
     return devices
@@ -36,10 +39,36 @@ export function stopEmulator(runningDevices: Device[]) {
 
 }
 
+function connectDevice(device: Device): void {
+    console.log(`Connecting device ${device.deviceId} to ${device.config.ingestHost}:${device.config.ingestPort}`)
+
+    const socket = net.createConnection({
+        host: device.config.ingestHost,
+        port: device.config.ingestPort
+    })
+
+    socket.on('connect', () => {
+        console.log(`Device ${device.deviceId} connected to ${device.config.ingestHost}:${device.config.ingestPort}`)
+        startDevice(device)
+    })
+
+    socket.on('error', (error) => {
+        console.error(`Device ${device.deviceId} error: ${error}`)
+    })
+
+    socket.on('close', () => {
+        console.log(`Device ${device.deviceId} closed`)
+    })
+
+    device.socket = socket
+}
+
+
 function startDevice(device: Device) {
     console.log(`Starting device ${device.deviceId}`)
 
     device.eventTimer = setInterval(() => {
         console.log(`Device ${device.deviceId} event: ${new Date().toISOString()}`)
+        device.socket?.write(`event: ${new Date().toISOString()}\n`)
     }, device.config.eventIntervalMs)
 }
