@@ -14,7 +14,15 @@ type Device = {
     socket?: net.Socket
 }
 
-export function startEmulator(config: EmulatorConfig): Device[] {
+type MyEvent = {
+    deviceId: string
+    eventId: string
+    emittedAt: string
+    type: string
+    payload: Record<string, unknown>
+}
+
+export function startEmulator(config: EmulatorConfig): () => void {
     console.log(`Connecting ${config.deviceCount} device(s), ingest: ${config.ingestHost}:${config.ingestPort}`)
 
     const devices: Device[] = Array.from({ length: config.deviceCount }, (_, i) => ({
@@ -27,7 +35,11 @@ export function startEmulator(config: EmulatorConfig): Device[] {
         connectDevice(device)
     }
 
-    return devices
+    return () => {
+        for (const device of devices) {
+            stopDevice(device)
+        }
+    }
 }
 
 export function stopEmulator(runningDevices: Device[]) {
@@ -36,7 +48,6 @@ export function stopEmulator(runningDevices: Device[]) {
 
         clearInterval(device.eventTimer)
     }
-
 }
 
 function connectDevice(device: Device): void {
@@ -68,7 +79,37 @@ function startDevice(device: Device) {
     console.log(`Starting device ${device.deviceId}`)
 
     device.eventTimer = setInterval(() => {
-        console.log(`Device ${device.deviceId} event: ${new Date().toISOString()}`)
-        device.socket?.write(`event: ${new Date().toISOString()}\n`)
+        const event = createEvent(device.deviceId, new Date(), 'testEvent')
+        console.log(`Device ${device.deviceId} event: ${JSON.stringify(event)}`)
+        device.socket?.write(`event: ${JSON.stringify(event)}\n`)
     }, device.config.eventIntervalMs)
+}
+
+function stopDevice(device: Device) {
+    console.log(`Stopping device ${device.deviceId}`)
+
+    clearInterval(device.eventTimer)
+    device.socket?.end()
+}
+
+function createEvent(
+    deviceId: string,
+    now = new Date(),
+    type: string
+): MyEvent {
+    return {
+        deviceId,
+        eventId: crypto.randomUUID(),
+        emittedAt: now.toISOString(),
+        type,
+        payload: createPayload()
+    }
+}
+
+function createPayload() {
+    return {
+        temperatureC: Math.random() * 100,
+        cpuPercent: Math.random() * 100,
+        ramPercent: Math.random() * 100,
+    }
 }
