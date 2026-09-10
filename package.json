@@ -1,15 +1,9 @@
 {
-  "name": "signageos-device-emulator",
+  "name": "signageos",
   "private": true,
-  "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js"
-  },
-  "devDependencies": {
-    "@types/node": "^22.13.4",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "build": "pnpm -r run build",
+    "dev:emulator": "pnpm --filter signageos-device-emulator dev",
+    "dev:ingest": "pnpm --filter signageos-ingest-service dev"
   }
 }
