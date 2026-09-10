@@ -8,7 +8,7 @@ const publisher = await startPublisher({
 
 const stop = startIngestServer({
   host: process.env["INGEST_HOST"] ?? "0.0.0.0",
-  port: Number(process.env["INGEST_PORT"] ?? 4444),
+  port: Number(process.env["INGEST_PORT"] ?? 4000),
   publish: (event) => publishEvent(publisher, event),
 })
 

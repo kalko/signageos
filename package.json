@@ -4,11 +4,14 @@
   "scripts": {
     "build": "pnpm -r run build",
     "test": "pnpm --filter signageos-processing-service test",
-    "dev:emulator": "pnpm --filter signageos-device-emulator dev",
+    "start": "docker compose up --build",
+    "start:scale": "docker compose up --build --scale ingest=2 --scale processing=2",
+    "stop": "docker compose down",
+    "infra:start": "docker compose -f docker-compose.infra.yml up -d",
+    "infra:stop": "docker compose -f docker-compose.infra.yml down",
     "dev:ingest": "pnpm --filter signageos-ingest-service dev",
-    "dev:ingest:1": "INGEST_PORT=4445 pnpm --filter signageos-ingest-service dev",
-    "dev:ingest:2": "INGEST_PORT=4446 pnpm --filter signageos-ingest-service dev",
     "dev:ingest-proxy": "pnpm --filter signageos-ingest-proxy dev",
-    "dev:processing": "pnpm --filter signageos-processing-service dev"
+    "dev:processing": "pnpm --filter signageos-processing-service dev",
+    "dev:emulator": "pnpm --filter signageos-device-emulator dev"
   }
 }

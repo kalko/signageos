@@ -1,11 +1,11 @@
 import { startEmulator } from './emulator.js'
 
 const stop = startEmulator({
-  deviceCount: 5,
-  ingestHost: '127.0.0.1',
-  ingestPort: 4000,
-  eventIntervalMs: 4000,
-  reconnectDelayMs: 4000
+  deviceCount: Number(process.env['DEVICE_COUNT'] ?? 5),
+  ingestHost: process.env['INGEST_HOST'] ?? '127.0.0.1',
+  ingestPort: Number(process.env['INGEST_PORT'] ?? 4000),
+  eventIntervalMs: Number(process.env['EVENT_INTERVAL_MS'] ?? 4000),
+  reconnectDelayMs: Number(process.env['RECONNECT_DELAY_MS'] ?? 4000),
 })
 
 process.on('SIGINT', () => {

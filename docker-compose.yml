@@ -1,0 +1,87 @@
+# Full stack in Docker — no host ports; services talk over the Docker network.
+# Local pnpm dev uses standalone infra on host:  pnpm infra:start
+# More devices:  DEVICE_COUNT=20 in .env
+# Scale ingest:  pnpm start -- --scale ingest=2
+# Scale workers: pnpm start -- --scale processing=2
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: signageos
+      RABBITMQ_DEFAULT_PASS: signageos
+      RABBITMQ_ERLANG_COOKIE: signageos-dev-cookie
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongodb:
+    image: mongo:7
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ingest:
+    build: .
+    command: ["node", "apps/ingest-service/dist/index.js"]
+    environment:
+      AMQP_URL: amqp://signageos:signageos@rabbitmq:5672
+      AMQP_QUEUE: signageos.events
+      INGEST_HOST: 0.0.0.0
+      INGEST_PORT: 4000
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  ingest-proxy:
+    build: .
+    command: ["node", "apps/ingest-proxy/dist/index.js"]
+    environment:
+      PROXY_HOST: 0.0.0.0
+      PROXY_PORT: 4000
+      PROXY_BACKENDS: ingest:4000
+    depends_on:
+      - ingest
+    restart: on-failure
+
+  processing:
+    build: .
+    command: ["node", "apps/processing-service/dist/index.js"]
+    environment:
+      AMQP_URL: amqp://signageos:signageos@rabbitmq:5672
+      AMQP_QUEUE: signageos.events
+      MONGODB_URL: mongodb://mongodb:27017
+      MONGODB_DATABASE: signageos
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: on-failure
+
+  emulator:
+    build: .
+    command: ["node", "apps/device-emulator/dist/index.js"]
+    environment:
+      DEVICE_COUNT: ${DEVICE_COUNT:-5}
+      EVENT_INTERVAL_MS: ${EVENT_INTERVAL_MS:-4000}
+      INGEST_HOST: ingest-proxy
+      INGEST_PORT: 4000
+      RECONNECT_DELAY_MS: 4000
+    depends_on:
+      - ingest-proxy
+      - processing
+    restart: on-failure
+
+volumes:
+  rabbitmq_data:
+  mongodb_data:
