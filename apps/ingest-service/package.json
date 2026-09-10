@@ -8,8 +8,13 @@
     "start": "node dist/index.js"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/node": "^22.13.4",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "signageos-shared": "workspace:*",
+    "amqplib": "^0.10.9"
   }
 }

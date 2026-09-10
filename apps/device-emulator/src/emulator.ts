@@ -1,4 +1,5 @@
 import net from 'node:net'
+import type { MyEvent } from 'signageos-shared'
 
 type EmulatorConfig = {
     deviceCount: number
@@ -12,14 +13,6 @@ type Device = {
     readonly config: EmulatorConfig
     eventTimer?: NodeJS.Timeout
     socket?: net.Socket
-}
-
-type MyEvent = {
-    deviceId: string
-    eventId: string
-    emittedAt: string
-    type: string
-    payload: Record<string, unknown>
 }
 
 export function startEmulator(config: EmulatorConfig): () => void {
@@ -81,7 +74,7 @@ function startDevice(device: Device) {
     device.eventTimer = setInterval(() => {
         const event = createEvent(device.deviceId, new Date(), 'testEvent')
         console.log(`Device ${device.deviceId} event: ${JSON.stringify(event)}`)
-        device.socket?.write(`event: ${JSON.stringify(event)}\n`)
+        device.socket?.write(`${JSON.stringify(event)}\n`)
     }, device.config.eventIntervalMs)
 }
 
