@@ -4,6 +4,7 @@
   "scripts": {
     "build": "pnpm -r run build",
     "dev:emulator": "pnpm --filter signageos-device-emulator dev",
-    "dev:ingest": "pnpm --filter signageos-ingest-service dev"
+    "dev:ingest": "pnpm --filter signageos-ingest-service dev",
+    "dev:processing": "pnpm --filter signageos-processing-service dev"
   }
 }

@@ -1,0 +1,21 @@
+{
+  "name": "signageos-processing-service",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.8",
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "mongodb": "^7.6.0",
+    "signageos-shared": "workspace:*"
+  }
+}
