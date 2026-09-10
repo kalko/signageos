@@ -1,4 +1,4 @@
-import { startEmulator } from './emulator.js';
+import { startEmulator } from './emulator.js'
 
 const stop = startEmulator({
   deviceCount: 5,

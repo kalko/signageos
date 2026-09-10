@@ -1,7 +1,7 @@
-import { createPublisher } from "./publisher.js"
+import { closePublisher, publishEvent, startPublisher } from "./publisher.js"
 import { startIngestServer } from "./server.js"
 
-const publisher = await createPublisher({
+const publisher = await startPublisher({
   url: 'amqp://127.0.0.1:5672',
   queue: 'signageos.events',
 })
@@ -9,13 +9,14 @@ const publisher = await createPublisher({
 const stop = startIngestServer({
   host: '127.0.0.1',
   port: 4444,
-  publish: publisher.publish,
+  publish: (event) => publishEvent(publisher, event),
 })
 
-process.on("SIGINT", () => {
+process.on("SIGINT", async () => {
   console.log('Stopping ingest server...')
 
   stop()
+  await closePublisher(publisher)
 
   console.log('Ingest server stopped successfully.')
   process.exit(0)
