@@ -1,5 +1,5 @@
 import net from 'node:net'
-import type { MyEvent } from 'signageos-shared'
+import { MyEventSchema, type MyEvent } from 'signageos-shared'
 
 export type Config = {
     host: string
@@ -31,15 +31,25 @@ export function startIngestServer(config: Config): () => void {
 
                 console.log(line)
 
+                let parsed: unknown
                 try {
-                    const event = JSON.parse(line) as MyEvent
-                    deviceId ??= event.deviceId
-                    void config.publish(event).catch((error) => {
-                        console.error('Failed to publish event:', error)
-                    })
-                } catch (error) {
-                    console.error('Failed to parse event:', error)
+                    parsed = JSON.parse(line)
+                } catch {
+                    console.error('Invalid JSON, dropping message')
+                    continue
                 }
+
+                const result = MyEventSchema.safeParse(parsed)
+                if (!result.success) {
+                    console.error('Invalid event:', result.error.flatten().fieldErrors)
+                    continue
+                }
+
+                const event = result.data
+                deviceId ??= event.deviceId
+                void config.publish(event).catch((error) => {
+                    console.error('Failed to publish event:', error)
+                })
             }
         })
 

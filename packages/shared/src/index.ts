@@ -1,1 +1,1 @@
-export type { MyEvent } from "./event.js"
+export { MyEventSchema, type MyEvent } from "./event.js"
