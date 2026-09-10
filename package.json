@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "pnpm -r run build",
+    "test": "pnpm --filter signageos-processing-service test",
     "dev:emulator": "pnpm --filter signageos-device-emulator dev",
     "dev:ingest": "pnpm --filter signageos-ingest-service dev",
     "dev:ingest:1": "INGEST_PORT=4445 pnpm --filter signageos-ingest-service dev",

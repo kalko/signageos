@@ -15,5 +15,5 @@
     "rootDir": "src"
   },
   "include": ["src/**/*"],
-  "exclude": ["dist"]
+  "exclude": ["dist", "src/**/*.test.ts", "vitest.config.ts"]
 }
