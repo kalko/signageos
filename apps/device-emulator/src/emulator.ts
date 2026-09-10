@@ -6,13 +6,16 @@ type EmulatorConfig = {
     ingestHost: string
     ingestPort: number
     eventIntervalMs: number
+    reconnectDelayMs?: number
 }
 
 type Device = {
     readonly deviceId: string
     readonly config: EmulatorConfig
     eventTimer?: NodeJS.Timeout
+    reconnectTimer?: NodeJS.Timeout
     socket?: net.Socket
+    stopped: boolean
 }
 
 export function startEmulator(config: EmulatorConfig): () => void {
@@ -21,7 +24,7 @@ export function startEmulator(config: EmulatorConfig): () => void {
     const devices: Device[] = Array.from({ length: config.deviceCount }, (_, i) => ({
         deviceId: `device-${i + 1}`,
         config,
-        eventTimer: undefined
+        stopped: false,
     }))
 
     for (const device of devices) {
@@ -44,6 +47,8 @@ export function stopEmulator(runningDevices: Device[]) {
 }
 
 function connectDevice(device: Device): void {
+    if (device.stopped) return
+
     console.log(`Connecting device ${device.deviceId} to ${device.config.ingestHost}:${device.config.ingestPort}`)
 
     const socket = net.createConnection({
@@ -51,24 +56,37 @@ function connectDevice(device: Device): void {
         port: device.config.ingestPort
     })
 
+    device.socket = socket
+
     socket.on('connect', () => {
         console.log(`Device ${device.deviceId} connected to ${device.config.ingestHost}:${device.config.ingestPort}`)
         startDevice(device)
     })
 
     socket.on('error', (error) => {
-        console.error(`Device ${device.deviceId} error: ${error}`)
+        console.error(`Device ${device.deviceId} error: ${error.message}`)
     })
 
     socket.on('close', () => {
-        console.log(`Device ${device.deviceId} closed`)
-    })
+        stopDeviceEvents(device)
+        device.socket = undefined
 
-    device.socket = socket
+        if (device.stopped) {
+            console.log(`Device ${device.deviceId} stopped`)
+            return
+        }
+
+        const delayMs = device.config.reconnectDelayMs ?? 4000
+        console.log(`Device ${device.deviceId} disconnected, reconnecting in ${delayMs}ms...`)
+        device.reconnectTimer = setTimeout(() => {
+            device.reconnectTimer = undefined
+            connectDevice(device)
+        }, delayMs)
+    })
 }
 
-
 function startDevice(device: Device) {
+    stopDeviceEvents(device)
     console.log(`Starting device ${device.deviceId}`)
 
     device.eventTimer = setInterval(() => {
@@ -78,11 +96,25 @@ function startDevice(device: Device) {
     }, device.config.eventIntervalMs)
 }
 
+function stopDeviceEvents(device: Device) {
+    if (device.eventTimer) {
+        clearInterval(device.eventTimer)
+        device.eventTimer = undefined
+    }
+}
+
 function stopDevice(device: Device) {
     console.log(`Stopping device ${device.deviceId}`)
 
-    clearInterval(device.eventTimer)
-    device.socket?.end()
+    device.stopped = true
+
+    if (device.reconnectTimer) {
+        clearTimeout(device.reconnectTimer)
+        device.reconnectTimer = undefined
+    }
+
+    stopDeviceEvents(device)
+    device.socket?.destroy()
 }
 
 function createEvent(

@@ -4,7 +4,8 @@ const stop = startEmulator({
   deviceCount: 5,
   ingestHost: '127.0.0.1',
   ingestPort: 4444,
-  eventIntervalMs: 4000
+  eventIntervalMs: 4000,
+  reconnectDelayMs: 4000
 })
 
 process.on('SIGINT', () => {
