@@ -2,13 +2,13 @@ import { closePublisher, publishEvent, startPublisher } from "./publisher.js"
 import { startIngestServer } from "./server.js"
 
 const publisher = await startPublisher({
-  url: 'amqp://127.0.0.1:5672',
-  queue: 'signageos.events',
+  url: process.env["AMQP_URL"] ?? "amqp://127.0.0.1:5672",
+  queue: process.env["AMQP_QUEUE"] ?? "signageos.events",
 })
 
 const stop = startIngestServer({
-  host: '127.0.0.1',
-  port: 4444,
+  host: process.env["INGEST_HOST"] ?? "0.0.0.0",
+  port: Number(process.env["INGEST_PORT"] ?? 4444),
   publish: (event) => publishEvent(publisher, event),
 })
 

@@ -5,6 +5,9 @@
     "build": "pnpm -r run build",
     "dev:emulator": "pnpm --filter signageos-device-emulator dev",
     "dev:ingest": "pnpm --filter signageos-ingest-service dev",
+    "dev:ingest:1": "INGEST_PORT=4445 pnpm --filter signageos-ingest-service dev",
+    "dev:ingest:2": "INGEST_PORT=4446 pnpm --filter signageos-ingest-service dev",
+    "dev:ingest-proxy": "pnpm --filter signageos-ingest-proxy dev",
     "dev:processing": "pnpm --filter signageos-processing-service dev"
   }
 }
