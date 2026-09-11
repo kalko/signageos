@@ -1,8 +1,7 @@
-# Full stack in Docker — no host ports; services talk over the Docker network.
-# Local pnpm dev uses standalone infra on host:  pnpm infra:start
-# More devices:  DEVICE_COUNT=20 in .env
-# Scale ingest:  pnpm start -- --scale ingest=2
-# Scale workers: pnpm start -- --scale processing=2
+# Self-contained stack — internal MongoDB + RabbitMQ (no host ports).
+# Do not run with `pnpm infra:start`; use either this or local dev infra, not both.
+# More devices: DEVICE_COUNT=20 in .env
+# Scale: pnpm start:scale  or  pnpm scale --scale ingest=N --scale processing=M
 
 services:
   rabbitmq:
@@ -42,13 +41,10 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  ingest-proxy:
-    build: .
-    command: ["node", "apps/ingest-proxy/dist/index.js"]
-    environment:
-      PROXY_HOST: 0.0.0.0
-      PROXY_PORT: 4000
-      PROXY_BACKENDS: ingest:4000
+  haproxy:
+    image: haproxy:2.8-alpine
+    volumes:
+      - ./config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     depends_on:
       - ingest
     restart: on-failure
@@ -74,11 +70,11 @@ services:
     environment:
       DEVICE_COUNT: ${DEVICE_COUNT:-5}
       EVENT_INTERVAL_MS: ${EVENT_INTERVAL_MS:-4000}
-      INGEST_HOST: ingest-proxy
+      INGEST_HOST: haproxy
       INGEST_PORT: 4000
       RECONNECT_DELAY_MS: 4000
     depends_on:
-      - ingest-proxy
+      - haproxy
       - processing
     restart: on-failure
 
