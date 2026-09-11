@@ -6,7 +6,8 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "test": "vitest run"
+    "test": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run src/pipeline.integration.test.ts"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.8",

@@ -74,23 +74,40 @@ export async function saveDeviceState(store: MongoStore, event: MyEvent): Promis
     throw new Error("MongoDB devices collection is not connected")
   }
 
-  await store.devices.updateOne(
-    {
-      deviceId: event.deviceId,
-      $or: [{ emittedAt: { $exists: false } }, { emittedAt: { $lt: event.emittedAt } }],
-    },
-    {
-      $set: {
-        deviceId: event.deviceId,
-        lastEventId: event.eventId,
-        lastEventType: event.type,
-        emittedAt: event.emittedAt,
-        payload: event.payload,
-        updatedAt: new Date(),
-      },
-    },
-    { upsert: true }
-  )
+  const state = {
+    deviceId: event.deviceId,
+    lastEventId: event.eventId,
+    lastEventType: event.type,
+    emittedAt: event.emittedAt,
+    payload: event.payload,
+    updatedAt: new Date(),
+  }
+
+  const filter = {
+    deviceId: event.deviceId,
+    $or: [{ emittedAt: { $exists: false } }, { emittedAt: { $lt: event.emittedAt } }],
+  }
+
+  const result = await store.devices.updateOne(filter, { $set: state })
+  if (result.matchedCount > 0) return
+
+  const existing = await store.devices.findOne({ deviceId: event.deviceId })
+  if (existing) {
+    const storedEmittedAt = existing["emittedAt"]
+    if (typeof storedEmittedAt === "string" && storedEmittedAt >= event.emittedAt) return
+
+    await store.devices.updateOne(filter, { $set: state })
+    return
+  }
+
+  try {
+    // Copy so the driver cannot attach _id to `state` and break a later $set.
+    await store.devices.insertOne({ ...state })
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) throw error
+
+    await store.devices.updateOne(filter, { $set: state })
+  }
 }
 
 function isDuplicateKeyError(error: unknown): boolean {

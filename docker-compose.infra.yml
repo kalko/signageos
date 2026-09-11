@@ -3,14 +3,12 @@
 
 services:
   mongo:
-    container_name: mongo
     image: mongo:7
     ports:
       - "27017:27017"
     restart: unless-stopped
 
   mongo-express:
-    container_name: mongo-express
     image: mongo-express
     ports:
       - "8081:8081"
@@ -22,7 +20,6 @@ services:
     restart: unless-stopped
 
   rabbitmq:
-    container_name: rabbitmq
     image: rabbitmq:3-management
     ports:
       - "5672:5672"

@@ -46,6 +46,18 @@ function createInMemoryStore(): {
   } as unknown as Collection
 
   store.devices = {
+    async findOne(filter: { deviceId: string }) {
+      return devices.get(filter.deviceId) ?? null
+    },
+    async insertOne(doc: Record<string, unknown>) {
+      const deviceId = doc["deviceId"] as string
+      if (devices.has(deviceId)) {
+        const error = Object.assign(new Error("duplicate key"), { code: 11000 })
+        throw error
+      }
+      devices.set(deviceId, doc)
+      return { acknowledged: true, insertedId: deviceId }
+    },
     async updateOne(
       filter: { deviceId: string; $or: Array<Record<string, unknown>> },
       update: { $set: Record<string, unknown> }
@@ -58,9 +70,9 @@ function createInMemoryStore(): {
         !("emittedAt" in existing) ||
         (existing["emittedAt"] as string) < incomingEmittedAt
 
-      if (isNewer) {
+      if (isNewer && existing) {
         devices.set(filter.deviceId, update.$set)
-        return { matchedCount: existing ? 1 : 0, modifiedCount: 1, upsertedCount: existing ? 0 : 1 }
+        return { matchedCount: 1, modifiedCount: 1, upsertedCount: 0 }
       }
 
       return { matchedCount: 0, modifiedCount: 0, upsertedCount: 0 }
